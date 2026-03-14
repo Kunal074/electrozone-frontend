@@ -13,14 +13,14 @@ const defaultSlides = [
     btnText:  "Shop Now",
     link:     "/products?category=SMARTPHONE",
     image:    null,
-    bgFrom:   "from-blue-900",
-    bgTo:     "to-blue-700",
+    bgFrom:   "#1e3a8a",
+    bgTo:     "#1d4ed8",
   },
 ];
 
 export default function HeroSection() {
-  const [current,  setCurrent]  = useState(0);
-  const [fadeIn,   setFadeIn]   = useState(true);
+  const [current, setCurrent] = useState(0);
+  const [fadeIn,  setFadeIn]  = useState(true);
 
   const { data } = useQuery({
     queryKey: ["banners"],
@@ -51,7 +51,12 @@ export default function HeroSection() {
   const slide = slides[current] || defaultSlides[0];
 
   return (
-    <div className={`bg-gradient-to-r ${slide.bgFrom} ${slide.bgTo} text-white transition-all duration-700`}>
+    <div
+      style={{
+        background: `linear-gradient(to right, ${slide.bgFrom}, ${slide.bgTo})`,
+        transition: "background 0.7s ease",
+      }}
+    >
       <div className="max-w-7xl mx-auto px-4 py-12 md:py-20">
         <div
           className="flex items-center justify-between"
@@ -65,10 +70,10 @@ export default function HeroSection() {
             <span className="bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full">
               {slide.tag}
             </span>
-            <h1 className="text-3xl md:text-5xl font-bold mt-4 mb-3 whitespace-pre-line leading-tight">
+            <h1 className="text-3xl md:text-5xl font-bold mt-4 mb-3 whitespace-pre-line leading-tight text-white">
               {slide.title}
             </h1>
-            <p className="text-blue-200 mb-6">{slide.subtitle}</p>
+            <p className="mb-6 text-white opacity-80">{slide.subtitle}</p>
             <Link
               href={slide.link}
               className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-8 py-3 rounded-lg inline-block transition"
@@ -100,9 +105,15 @@ export default function HeroSection() {
               <button
                 key={i}
                 onClick={() => handleDotClick(i)}
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  i === current ? "w-8 bg-orange-500" : "w-2 bg-white/40"
-                }`}
+                style={{
+                  width:           i === current ? 32 : 8,
+                  height:          8,
+                  borderRadius:    4,
+                  backgroundColor: i === current ? "#EA580C" : "rgba(255,255,255,0.4)",
+                  transition:      "all 0.3s ease",
+                  border:          "none",
+                  cursor:          "pointer",
+                }}
               />
             ))}
           </div>
