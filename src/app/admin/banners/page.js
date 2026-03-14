@@ -15,18 +15,21 @@ const emptyForm = {
   btnText:  "Shop Now",
   link:     "/products",
   image:    "",
-  bgFrom:   "from-blue-900",
-  bgTo:     "to-blue-700",
+  bgFrom:   "#1e3a8a",
+  bgTo:     "#1d4ed8",
   order:    0,
   isActive: true,
 };
 
 const bgOptions = [
-  { label: "Blue",   from: "from-blue-900",   to: "to-blue-700"   },
-  { label: "Gray",   from: "from-gray-900",   to: "to-gray-700"   },
-  { label: "Purple", from: "from-purple-900", to: "to-purple-700" },
-  { label: "Green",  from: "from-green-900",  to: "to-green-700"  },
-  { label: "Red",    from: "from-red-900",    to: "to-red-700"    },
+  { label: "Blue",   from: "#1e3a8a", to: "#1d4ed8" },
+  { label: "Dark",   from: "#111827", to: "#374151" },
+  { label: "Purple", from: "#4c1d95", to: "#6d28d9" },
+  { label: "Green",  from: "#064e3b", to: "#065f46" },
+  { label: "Red",    from: "#7f1d1d", to: "#b91c1c" },
+  { label: "Orange", from: "#7c2d12", to: "#c2410c" },
+  { label: "Pink",   from: "#831843", to: "#be185d" },
+  { label: "Teal",   from: "#134e4a", to: "#0f766e" },
 ];
 
 export default function BannersPage() {
@@ -228,18 +231,59 @@ export default function BannersPage() {
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
                   Background Color
                 </label>
-                <div className="flex gap-3">
+                <div className="flex gap-3 flex-wrap">
                   {bgOptions.map((bg) => (
                     <button
                       key={bg.label}
                       onClick={() => { updateForm("bgFrom", bg.from); updateForm("bgTo", bg.to); }}
-                      className={`flex-1 py-3 rounded-xl bg-gradient-to-r ${bg.from} ${bg.to} text-white text-xs font-bold transition ${
+                      style={{ background: `linear-gradient(to right, ${bg.from}, ${bg.to})` }}
+                      className={`flex-1 py-3 rounded-xl text-white text-xs font-bold transition min-w-16 ${
                         form.bgFrom === bg.from ? "ring-2 ring-offset-2 ring-blue-500" : ""
                       }`}
                     >
                       {bg.label}
                     </button>
                   ))}
+                </div>
+
+                {/* Custom Color Input */}
+                <div className="flex gap-3 mt-3">
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-400 mb-1">Custom From Color</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={form.bgFrom}
+                        onChange={(e) => updateForm("bgFrom", e.target.value)}
+                        className="w-10 h-10 rounded cursor-pointer border"
+                      />
+                      <input
+                        type="text"
+                        value={form.bgFrom}
+                        onChange={(e) => updateForm("bgFrom", e.target.value)}
+                        placeholder="#1e3a8a"
+                        className="flex-1 border rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-400 mb-1">Custom To Color</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={form.bgTo}
+                        onChange={(e) => updateForm("bgTo", e.target.value)}
+                        className="w-10 h-10 rounded cursor-pointer border"
+                      />
+                      <input
+                        type="text"
+                        value={form.bgTo}
+                        onChange={(e) => updateForm("bgTo", e.target.value)}
+                        placeholder="#1d4ed8"
+                        className="flex-1 border rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -283,7 +327,10 @@ export default function BannersPage() {
 
             {/* Preview */}
             {(form.title || form.tag) && (
-              <div className={`mt-4 bg-gradient-to-r ${form.bgFrom} ${form.bgTo} rounded-xl p-6 text-white`}>
+              <div
+                className="mt-4 rounded-xl p-6 text-white"
+                style={{ background: `linear-gradient(to right, ${form.bgFrom}, ${form.bgTo})` }}
+              >
                 <span className="bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full">
                   {form.tag || "Tag"}
                 </span>
@@ -327,7 +374,10 @@ export default function BannersPage() {
           ) : (
             banners.map((banner) => (
               <div key={banner.id} className="bg-white rounded-xl border overflow-hidden">
-                <div className={`bg-gradient-to-r ${banner.bgFrom} ${banner.bgTo} p-4 text-white flex items-center justify-between`}>
+                <div
+                  className="p-4 text-white flex items-center justify-between"
+                  style={{ background: `linear-gradient(to right, ${banner.bgFrom}, ${banner.bgTo})` }}
+                >
                   <div>
                     <span className="bg-orange-500 text-xs font-bold px-2 py-0.5 rounded-full">
                       {banner.tag}
