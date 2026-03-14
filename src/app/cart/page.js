@@ -9,6 +9,13 @@ import useAuthStore from "@/store/authStore";
 import { formatPrice } from "@/lib/utils";
 import { createOrder } from "@/lib/queries";
 
+const PAYMENT_METHODS = [
+  { value: "COD",          label: "💵 Cash on Delivery", sub: "Delivery pe pay karo" },
+  { value: "UPI",          label: "📱 UPI",              sub: "GPay, PhonePe, Paytm" },
+  { value: "CARD",         label: "💳 Card",             sub: "Debit / Credit card" },
+  { value: "ADVANCE_50",   label: "50% Advance",         sub: "Half abhi, half on delivery" },
+];
+
 export default function CartPage() {
   const router = useRouter();
   const { items, storeId, fulfillmentType, removeItem, updateQuantity, setFulfillmentType, clearCart, getSubtotal } = useCartStore();
@@ -23,13 +30,14 @@ export default function CartPage() {
     landmark: "",
   });
 
-  const [guestInfo, setGuestInfo] = useState({ name: "", phone: "" });
-  const [loading,   setLoading]   = useState(false);
-  const [error,     setError]     = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("COD");
+  const [guestInfo,     setGuestInfo]     = useState({ name: "", phone: "" });
+  const [loading,       setLoading]       = useState(false);
+  const [error,         setError]         = useState("");
 
-  const subtotal      = getSubtotal();
+  const subtotal       = getSubtotal();
   const deliveryCharge = fulfillmentType === "HOME_DELIVERY" ? 49 : 0;
-  const total         = subtotal + deliveryCharge;
+  const total          = subtotal + deliveryCharge;
 
   const handlePlaceOrder = async () => {
     if (items.length === 0) return;
@@ -57,7 +65,7 @@ export default function CartPage() {
           quantity:  item.quantity,
         })),
         fulfillmentType,
-        paymentMethod: "COD",
+        paymentMethod,
         ...(fulfillmentType === "HOME_DELIVERY" && { deliveryAddress: address }),
         ...(!isLoggedIn && { guestName: guestInfo.name, guestPhone: guestInfo.phone }),
       };
@@ -110,7 +118,7 @@ export default function CartPage() {
 
         <div className="grid md:grid-cols-3 gap-6">
 
-          {/* Cart Items */}
+          {/* Left Side */}
           <div className="md:col-span-2 space-y-4">
 
             {/* Fulfillment Toggle */}
@@ -155,22 +163,16 @@ export default function CartPage() {
                     <button
                       onClick={() => updateQuantity(item.id, item.quantity - 1)}
                       className="w-8 h-8 border rounded-lg flex items-center justify-center hover:bg-gray-50 font-bold"
-                    >
-                      −
-                    </button>
+                    >−</button>
                     <span className="font-semibold">{item.quantity}</span>
                     <button
                       onClick={() => updateQuantity(item.id, item.quantity + 1)}
                       className="w-8 h-8 border rounded-lg flex items-center justify-center hover:bg-gray-50 font-bold"
-                    >
-                      +
-                    </button>
+                    >+</button>
                     <button
                       onClick={() => removeItem(item.id)}
                       className="ml-auto text-red-400 text-sm hover:text-red-600"
-                    >
-                      Remove
-                    </button>
+                    >Remove</button>
                   </div>
                 </div>
               </div>
@@ -204,44 +206,32 @@ export default function CartPage() {
               <div className="bg-white rounded-xl border p-4">
                 <p className="font-semibold text-gray-800 mb-3">📍 Delivery Address</p>
                 <div className="grid grid-cols-2 gap-3">
-                  <input
-                    type="text"
-                    placeholder="Full name"
+                  <input type="text" placeholder="Full name"
                     value={address.name}
                     onChange={(e) => setAddress({ ...address, name: e.target.value })}
                     className="border rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-500"
                   />
-                  <input
-                    type="tel"
-                    placeholder="Phone"
+                  <input type="tel" placeholder="Phone"
                     value={address.phone}
                     onChange={(e) => setAddress({ ...address, phone: e.target.value })}
                     className="border rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-500"
                   />
-                  <input
-                    type="text"
-                    placeholder="Street address"
+                  <input type="text" placeholder="Street address"
                     value={address.street}
                     onChange={(e) => setAddress({ ...address, street: e.target.value })}
                     className="col-span-2 border rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-500"
                   />
-                  <input
-                    type="text"
-                    placeholder="City"
+                  <input type="text" placeholder="City"
                     value={address.city}
                     onChange={(e) => setAddress({ ...address, city: e.target.value })}
                     className="border rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-500"
                   />
-                  <input
-                    type="text"
-                    placeholder="Pincode"
+                  <input type="text" placeholder="Pincode"
                     value={address.pincode}
                     onChange={(e) => setAddress({ ...address, pincode: e.target.value })}
                     className="border rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-500"
                   />
-                  <input
-                    type="text"
-                    placeholder="Landmark (optional)"
+                  <input type="text" placeholder="Landmark (optional)"
                     value={address.landmark}
                     onChange={(e) => setAddress({ ...address, landmark: e.target.value })}
                     className="col-span-2 border rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-500"
@@ -249,6 +239,37 @@ export default function CartPage() {
                 </div>
               </div>
             )}
+
+            {/* Payment Method */}
+            <div className="bg-white rounded-xl border p-4">
+              <p className="font-semibold text-gray-800 mb-3">💳 Payment Method</p>
+              <div className="space-y-2">
+                {PAYMENT_METHODS.map((pm) => (
+                  <div
+                    key={pm.value}
+                    onClick={() => setPaymentMethod(pm.value)}
+                    className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition ${
+                      paymentMethod === pm.value
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                      paymentMethod === pm.value ? "border-blue-500" : "border-gray-300"
+                    }`}>
+                      {paymentMethod === pm.value && (
+                        <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800">{pm.label}</p>
+                      <p className="text-xs text-gray-400">{pm.sub}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
           </div>
 
           {/* Order Summary */}
@@ -264,6 +285,12 @@ export default function CartPage() {
                   <span className="text-gray-500">Delivery</span>
                   <span className={deliveryCharge === 0 ? "text-green-500 font-medium" : ""}>
                     {deliveryCharge === 0 ? "FREE" : formatPrice(deliveryCharge)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Payment</span>
+                  <span className="text-gray-700 font-medium">
+                    {PAYMENT_METHODS.find(p => p.value === paymentMethod)?.label}
                   </span>
                 </div>
                 <div className="border-t pt-2 flex justify-between font-bold text-lg">
