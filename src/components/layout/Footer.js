@@ -44,7 +44,7 @@ export default function Footer() {
             <ul className="space-y-2 text-sm">
               <li>📞 +91 99999 99999</li>
               <li>💬 WhatsApp Us</li>
-              <li>📍 Main Market, Indore</li>
+              <li>📍 Main Market, Raipur</li>
               <li>🕐 10AM – 8PM</li>
             </ul>
           </div>
