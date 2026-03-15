@@ -70,7 +70,7 @@ export default function OwnerProfilePage() {
 
   const { mutate: updateStore, isLoading: saving } = useMutation({
     mutationFn: async (data) => {
-      const res = await api.put(`/stores/${user?.store?.id}`, data);
+      const res = await api.put(`/stores/my`, data);
       return res.data;
     },
     onSuccess: () => {
