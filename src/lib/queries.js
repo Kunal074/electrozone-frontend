@@ -154,3 +154,15 @@ export const updateStore = async (id, data) => {
   const res = await api.put(`/stores/${id}`, data);
   return res.data;
 };
+
+// Tally API Key generate karo
+export const generateTallyKey = async (storeId) => {
+  const res = await api.post(`/stores/${storeId}/tally-key`);
+  return res.data;
+};
+
+export const getTallyKey = async () => {
+  const res = await api.get('/stores/my/tally-key');
+  return res.data;
+};
+
