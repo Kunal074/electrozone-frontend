@@ -1,16 +1,14 @@
 "use client";
-
-import { useState, useRef } from "react";
+import api from "@/lib/api";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import { createOfflineSale, getStoreSales, deleteOfflineSale } from "@/lib/queries";
 import useAuthStore from "@/store/authStore";
 
 const GST_RATES = [0, 5, 12, 18, 28];
 const PAYMENT_MODES = ["CASH", "UPI", "CARD", "CHEQUE", "OTHER"];
-
 const emptyItem = { name: "", qty: 1, price: "", gst: 0 };
 
 export default function BillingPage() {
@@ -19,16 +17,12 @@ export default function BillingPage() {
   const queryClient = useQueryClient();
   const printRef    = useRef();
 
-  const [tab,       setTab]       = useState("new");   // new | history
+  const [tab,       setTab]       = useState("new");
   const [search,    setSearch]    = useState("");
   const [showBill,  setShowBill]  = useState(false);
   const [savedBill, setSavedBill] = useState(null);
-
-  const [customer, setCustomer] = useState({
-    name: "", phone: "", email: ""
-  });
-
-  const [items, setItems] = useState([{ ...emptyItem }]);
+  const [customer,  setCustomer]  = useState({ name: "", phone: "", email: "", gstin: "" });
+  const [items,     setItems]     = useState([{ ...emptyItem }]);
   const [discount,    setDiscount]    = useState(0);
   const [paymentMode, setPaymentMode] = useState("CASH");
   const [notes,       setNotes]       = useState("");
@@ -40,7 +34,18 @@ export default function BillingPage() {
     }
   }, [isLoggedIn, user]);
 
-  // ── Calculations ──
+  // Store data fetch
+  const { data: storeData } = useQuery({
+    queryKey: ["owner-store-billing"],
+    queryFn:  async () => {
+      const res = await api.get("/stores/my");
+      return res.data;
+    },
+    enabled: !!user?.store?.id,
+  });
+  const store = storeData?.data;
+
+  // Calculations
   const subtotal = items.reduce((sum, item) => {
     return sum + (Number(item.price) || 0) * (Number(item.qty) || 0);
   }, 0);
@@ -52,7 +57,7 @@ export default function BillingPage() {
 
   const totalAmount = subtotal + gstAmount - Number(discount || 0);
 
-  // ── Queries ──
+  // Queries
   const { data: salesData, isLoading: salesLoading } = useQuery({
     queryKey: ["store-sales", search],
     queryFn:  () => getStoreSales({ search }),
@@ -74,7 +79,6 @@ export default function BillingPage() {
     onSuccess:  () => queryClient.invalidateQueries(["store-sales"]),
   });
 
-  // ── Item Handlers ──
   const addItem    = () => setItems([...items, { ...emptyItem }]);
   const removeItem = (i) => setItems(items.filter((_, idx) => idx !== i));
   const updateItem = (i, key, val) => {
@@ -95,6 +99,7 @@ export default function BillingPage() {
       customerName:  customer.name,
       customerPhone: customer.phone,
       customerEmail: customer.email,
+      customerGstin: customer.gstin,
       items,
       subtotal,
       discountAmount: Number(discount || 0),
@@ -105,12 +110,8 @@ export default function BillingPage() {
     });
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   const resetForm = () => {
-    setCustomer({ name: "", phone: "", email: "" });
+    setCustomer({ name: "", phone: "", email: "", gstin: "" });
     setItems([{ ...emptyItem }]);
     setDiscount(0);
     setPaymentMode("CASH");
@@ -166,7 +167,7 @@ export default function BillingPage() {
           ))}
         </div>
 
-        {/* ── NEW BILL TAB ── */}
+        {/* NEW BILL TAB */}
         {tab === "new" && !showBill && (
           <div className="space-y-4">
 
@@ -179,7 +180,7 @@ export default function BillingPage() {
             {/* Customer Details */}
             <div className="bg-white rounded-xl border p-5">
               <h2 className="font-bold text-gray-800 mb-4">👤 Customer Details</h2>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">Name *</label>
                   <input
@@ -210,6 +211,17 @@ export default function BillingPage() {
                     className="w-full border rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-500"
                   />
                 </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">GSTIN (optional)</label>
+                  <input
+                    type="text"
+                    placeholder="22AAAAA0000A1Z5"
+                    value={customer.gstin}
+                    onChange={(e) => setCustomer({ ...customer, gstin: e.target.value.toUpperCase() })}
+                    maxLength={15}
+                    className="w-full border rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-500 font-mono"
+                  />
+                </div>
               </div>
             </div>
 
@@ -225,7 +237,6 @@ export default function BillingPage() {
                 </button>
               </div>
 
-              {/* Table Header */}
               <div className="grid grid-cols-12 gap-2 text-xs text-gray-500 uppercase font-bold mb-2 px-2">
                 <div className="col-span-4">Item Name</div>
                 <div className="col-span-2">Qty</div>
@@ -280,12 +291,7 @@ export default function BillingPage() {
                   </div>
                   <div className="col-span-1">
                     {items.length > 1 && (
-                      <button
-                        onClick={() => removeItem(i)}
-                        className="text-red-400 hover:text-red-600 text-lg"
-                      >
-                        ×
-                      </button>
+                      <button onClick={() => removeItem(i)} className="text-red-400 hover:text-red-600 text-lg">×</button>
                     )}
                   </div>
                 </div>
@@ -294,8 +300,6 @@ export default function BillingPage() {
 
             {/* Summary + Payment */}
             <div className="grid grid-cols-2 gap-4">
-
-              {/* Payment */}
               <div className="bg-white rounded-xl border p-5">
                 <h2 className="font-bold text-gray-800 mb-4">💳 Payment</h2>
                 <div className="space-y-3">
@@ -340,7 +344,6 @@ export default function BillingPage() {
                 </div>
               </div>
 
-              {/* Summary */}
               <div className="bg-white rounded-xl border p-5">
                 <h2 className="font-bold text-gray-800 mb-4">📊 Summary</h2>
                 <div className="space-y-2">
@@ -361,7 +364,6 @@ export default function BillingPage() {
                     <span className="text-orange-500">{formatPrice(totalAmount)}</span>
                   </div>
                 </div>
-
                 <button
                   onClick={handleSave}
                   disabled={saving}
@@ -374,11 +376,9 @@ export default function BillingPage() {
           </div>
         )}
 
-        {/* ── BILL PREVIEW (After Save) ── */}
+        {/* BILL PREVIEW */}
         {showBill && savedBill && (
           <div className="bg-white rounded-xl border p-6">
-
-            {/* Action Buttons */}
             <div className="flex gap-3 mb-6 print:hidden">
               <button
                 onClick={handlePrint}
@@ -394,13 +394,32 @@ export default function BillingPage() {
               </button>
             </div>
 
-            {/* Printable Bill */}
             <div ref={printRef} className="max-w-2xl mx-auto" id="print-bill">
 
               {/* Store Header */}
               <div className="text-center border-b pb-4 mb-4">
-                <h2 className="text-2xl font-bold text-gray-800">{user?.store?.storeName}</h2>
-                <p className="text-gray-500 text-sm mt-1">Tax Invoice</p>
+                {store?.logo && (
+                  <img src={store.logo} alt="" className="w-16 h-16 object-contain mx-auto mb-2 rounded-xl" />
+                )}
+                <h2 className="text-2xl font-bold text-gray-800">
+                  {store?.storeName || user?.store?.storeName}
+                </h2>
+                {store?.address && (
+                  <p className="text-gray-500 text-sm mt-1">
+                    {store.address}, {store.city} — {store.pincode}
+                  </p>
+                )}
+                {store?.phone && (
+                  <p className="text-gray-500 text-sm">📞 {store.phone}</p>
+                )}
+                {store?.gstNumber && (
+                  <p className="text-gray-600 text-sm font-semibold mt-1">
+                    GSTIN: {store.gstNumber}
+                  </p>
+                )}
+                <p className="text-gray-400 text-xs mt-2 font-medium uppercase tracking-wider">
+                  Tax Invoice
+                </p>
               </div>
 
               {/* Bill Info */}
@@ -420,7 +439,14 @@ export default function BillingPage() {
                 <p className="font-bold text-gray-700 mb-1">Bill To:</p>
                 <p className="text-gray-800 font-semibold">{savedBill.customerName}</p>
                 <p className="text-gray-600">{savedBill.customerPhone}</p>
-                {savedBill.customerEmail && <p className="text-gray-600">{savedBill.customerEmail}</p>}
+                {savedBill.customerEmail && (
+                  <p className="text-gray-600">{savedBill.customerEmail}</p>
+                )}
+                {savedBill.customerGstin && (
+                  <p className="text-gray-600 font-mono text-xs mt-1">
+                    GSTIN: {savedBill.customerGstin}
+                  </p>
+                )}
               </div>
 
               {/* Items Table */}
@@ -443,7 +469,9 @@ export default function BillingPage() {
                       <td className="px-3 py-2 text-center text-gray-600">{item.qty}</td>
                       <td className="px-3 py-2 text-right text-gray-600">{formatPrice(item.price)}</td>
                       <td className="px-3 py-2 text-center text-gray-600">{item.gst}%</td>
-                      <td className="px-3 py-2 text-right font-semibold">{formatPrice(Number(item.price) * Number(item.qty))}</td>
+                      <td className="px-3 py-2 text-right font-semibold">
+                        {formatPrice(Number(item.price) * Number(item.qty))}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -493,7 +521,7 @@ export default function BillingPage() {
           </div>
         )}
 
-        {/* ── HISTORY TAB ── */}
+        {/* HISTORY TAB */}
         {tab === "history" && (
           <div>
             <div className="mb-4">
@@ -543,8 +571,6 @@ export default function BillingPage() {
                         </button>
                       </div>
                     </div>
-
-                    {/* Items Preview */}
                     <div className="flex flex-wrap gap-2 mt-3">
                       {sale.items?.slice(0, 3).map((item, i) => (
                         <span key={i} className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-lg">
@@ -561,7 +587,6 @@ export default function BillingPage() {
             )}
           </div>
         )}
-
       </main>
     </div>
   );
