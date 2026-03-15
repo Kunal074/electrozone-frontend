@@ -68,10 +68,11 @@ export default function OwnerDashboard() {
         {/* Quick Links */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           {[
-            { label: "Manage Products",   link: "/owner/products",    emoji: "📦", color: "blue"   },
+            { label: "Manage Products",    link: "/owner/products",    emoji: "📦", color: "blue"   },
             { label: "Used Phones",        link: "/owner/used-phones", emoji: "♻️", color: "purple" },
             { label: "Store Profile",      link: `/stores/${user?.store?.id}`, emoji: "🏪", color: "green"  },
             { label: "Back to Site",       link: "/",                  emoji: "🏠", color: "gray"   },
+            { label: "Billing",            link: "/owner/billing",     emoji: "🧾", color: "orange" },
           ].map((item) => (
             <button
               key={item.label}

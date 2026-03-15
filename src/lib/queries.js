@@ -127,3 +127,25 @@ export const deleteBanner = async (id) => {
   const res = await api.delete(`/banners/${id}`);
   return res.data;
 };
+
+// ── OFFLINE SALES ──
+export const createOfflineSale = async (data) => {
+  const res = await api.post('/offline-sales', data);
+  return res.data;
+};
+export const getStoreSales = async (params = {}) => {
+  const res = await api.get('/offline-sales/store', { params });
+  return res.data;
+};
+export const getOfflineSale = async (id) => {
+  const res = await api.get(`/offline-sales/${id}`);
+  return res.data;
+};
+export const deleteOfflineSale = async (id) => {
+  const res = await api.delete(`/offline-sales/${id}`);
+  return res.data;
+};
+export const getMyPurchases = async () => {
+  const res = await api.get('/offline-sales/my/purchases');
+  return res.data;
+};
