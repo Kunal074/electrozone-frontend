@@ -149,3 +149,8 @@ export const getMyPurchases = async () => {
   const res = await api.get('/offline-sales/my/purchases');
   return res.data;
 };
+
+export const updateStore = async (id, data) => {
+  const res = await api.put(`/stores/${id}`, data);
+  return res.data;
+};
