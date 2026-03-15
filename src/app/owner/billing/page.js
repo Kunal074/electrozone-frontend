@@ -7,9 +7,9 @@ import Navbar from "@/components/layout/Navbar";
 import { createOfflineSale, getStoreSales, deleteOfflineSale } from "@/lib/queries";
 import useAuthStore from "@/store/authStore";
 
-const GST_RATES    = [0, 5, 12, 18, 28];
+const GST_RATES     = [0, 5, 12, 18, 28];
 const PAYMENT_MODES = ["CASH", "UPI", "CARD", "CHEQUE", "OTHER"];
-const emptyItem    = { name: "", qty: 1, price: "", gst: 0 };
+const emptyItem     = { name: "", qty: 1, price: "", gst: 0 };
 
 export default function BillingPage() {
   const router      = useRouter();
@@ -17,20 +17,22 @@ export default function BillingPage() {
   const queryClient = useQueryClient();
   const printRef    = useRef();
 
-  const [tab,           setTab]           = useState("new");
-  const [search,        setSearch]        = useState("");
-  const [showBill,      setShowBill]      = useState(false);
-  const [savedBill,     setSavedBill]     = useState(null);
-  const [selectedBill,  setSelectedBill]  = useState(null);
-  const [customer,      setCustomer]      = useState({ name: "", phone: "", email: "", gstin: "" });
-  const [items,         setItems]         = useState([{ ...emptyItem }]);
-  const [discount,      setDiscount]      = useState(0);
-  const [paymentMode,   setPaymentMode]   = useState("CASH");
-  const [notes,         setNotes]         = useState("");
-  const [error,         setError]         = useState("");
+  const [tab,          setTab]          = useState("new");
+  const [search,       setSearch]       = useState("");
+  const [showBill,     setShowBill]     = useState(false);
+  const [savedBill,    setSavedBill]    = useState(null);
+  const [selectedBill, setSelectedBill] = useState(null);
+  const [customer,     setCustomer]     = useState({ name: "", phone: "", email: "", gstin: "" });
+  const [items,        setItems]        = useState([{ ...emptyItem }]);
+  const [discount,     setDiscount]     = useState(0);
+  const [paymentMode,  setPaymentMode]  = useState("CASH");
+  const [notes,        setNotes]        = useState("");
+  const [error,        setError]        = useState("");
 
   // Upload tab state
   const [uploadCustomer, setUploadCustomer] = useState({ name: "", phone: "" });
+  const [uploadAmount,   setUploadAmount]   = useState("");
+  const [uploadPayMode,  setUploadPayMode]  = useState("CASH");
   const [uploadFile,     setUploadFile]     = useState(null);
   const [uploading,      setUploading]      = useState(false);
   const [uploadError,    setUploadError]    = useState("");
@@ -108,6 +110,7 @@ export default function BillingPage() {
   const handleUpload = async () => {
     if (!uploadCustomer.name || !uploadCustomer.phone) { setUploadError("Customer naam aur phone zaroori hai"); return; }
     if (!uploadFile) { setUploadError("Bill file select karo"); return; }
+    if (!uploadAmount) { setUploadError("Bill ka total amount daalo"); return; }
     setUploadError(""); setUploading(true);
     try {
       const formData = new FormData();
@@ -121,18 +124,24 @@ export default function BillingPage() {
       );
       const cloudData = await cloudRes.json();
 
+      const amt = Number(uploadAmount) || 0;
       await api.post("/offline-sales", {
         customerName:  uploadCustomer.name,
         customerPhone: uploadCustomer.phone,
-        items:         [{ name: "Uploaded Bill", qty: 1, price: 0, gst: 0 }],
-        subtotal: 0, discountAmount: 0, gstAmount: 0, totalAmount: 0,
-        paymentMode: "CASH",
-        billImage: cloudData.secure_url,
-        notes: "Tally/Uploaded Bill",
+        items:         [{ name: "Uploaded Bill", qty: 1, price: amt, gst: 0 }],
+        subtotal:      amt,
+        discountAmount: 0,
+        gstAmount:     0,
+        totalAmount:   amt,
+        paymentMode:   uploadPayMode,
+        billImage:     cloudData.secure_url,
+        notes:         "Tally/Uploaded Bill",
       });
 
       setUploadSuccess("✅ Bill upload ho gaya!");
       setUploadCustomer({ name: "", phone: "" });
+      setUploadAmount("");
+      setUploadPayMode("CASH");
       setUploadFile(null);
       queryClient.invalidateQueries(["store-sales"]);
       setTimeout(() => setUploadSuccess(""), 3000);
@@ -169,7 +178,6 @@ export default function BillingPage() {
         {bill.customerGstin && <p className="text-gray-600 font-mono text-xs mt-1">GSTIN: {bill.customerGstin}</p>}
       </div>
 
-      {/* Uploaded bill image */}
       {bill.billImage ? (
         <div className="mb-4">
           {bill.billImage.includes(".pdf") ? (
@@ -180,6 +188,17 @@ export default function BillingPage() {
           ) : (
             <img src={bill.billImage} alt="Bill" className="w-full rounded-xl border" />
           )}
+          <div className="flex justify-end mt-4">
+            <div className="w-64 text-sm">
+              <div className="border-t pt-2 flex justify-between font-bold text-lg">
+                <span>Total</span>
+                <span className="text-orange-500">{formatPrice(bill.totalAmount)}</span>
+              </div>
+              <div className="flex justify-between text-gray-500 text-xs pt-1">
+                <span>Payment</span><span className="font-semibold">{bill.paymentMode}</span>
+              </div>
+            </div>
+          </div>
         </div>
       ) : (
         <>
@@ -380,6 +399,7 @@ export default function BillingPage() {
               <h2 className="font-bold text-gray-800 mb-2">📤 Bill Upload Karo</h2>
               <p className="text-sm text-gray-500 mb-4">Tally ya kisi bhi software ka bill — PDF ya Photo upload karo</p>
 
+              {/* Customer + Amount fields */}
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">Customer Name *</label>
@@ -393,9 +413,26 @@ export default function BillingPage() {
                     onChange={(e) => setUploadCustomer({ ...uploadCustomer, phone: e.target.value })}
                     className="w-full border rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-500" />
                 </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Total Amount (₹) *</label>
+                  <input type="number" placeholder="Bill ka total amount" value={uploadAmount}
+                    onChange={(e) => setUploadAmount(e.target.value)}
+                    className="w-full border rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Payment Mode</label>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {PAYMENT_MODES.map((mode) => (
+                      <button key={mode} onClick={() => setUploadPayMode(mode)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${uploadPayMode === mode ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"}`}>
+                        {mode}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
-              {/* Drag & Drop Upload */}
+              {/* Drag & Drop */}
               <div
                 className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition"
                 onClick={() => document.getElementById("bill-upload").click()}
@@ -432,6 +469,7 @@ export default function BillingPage() {
               <ul className="text-sm text-blue-600 space-y-1">
                 <li>• Tally mein bill banao → PDF export karo</li>
                 <li>• Customer ka naam aur phone daalo</li>
+                <li>• Total amount daalo</li>
                 <li>• PDF ya photo upload karo</li>
                 <li>• Customer ko automatically link ho jaayega</li>
               </ul>
