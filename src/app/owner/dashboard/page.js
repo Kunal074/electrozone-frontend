@@ -75,6 +75,7 @@ export default function OwnerDashboard() {
             { label: "Billing",            link: "/owner/billing",     emoji: "🧾", color: "orange" },
             { label: "Store Profile",      link: "/owner/profile",     emoji: "🏪", color: "green" },
             { label: "Tally Setup",        link: "/owner/tally",       emoji: "🔗", color: "purple" },
+            { label: "Notifications",      link: "/owner/notifications", emoji: "🔔", color: "blue" },
           ].map((item) => (
             <button
               key={item.label}
