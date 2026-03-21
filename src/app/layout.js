@@ -7,6 +7,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata = {
   title:       "ElectroZone — Local Electronics Store",
   description: "Best deals on phones, TVs, ACs and more!",
+  icons: {
+    icon: '/favicon.png',
+  },
 };
 
 export default function RootLayout({ children }) {
